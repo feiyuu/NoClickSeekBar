@@ -1,0 +1,186 @@
+package com.feiyu.view;
+
+import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Rect;
+import android.graphics.drawable.RotateDrawable;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.animation.LinearInterpolator;
+import android.widget.SeekBar;
+
+import com.feiyu.example.R;
+
+/**
+ * @author feiyu 2019/1/11
+ */
+@SuppressLint("AppCompatCustomView")
+public class NoClickSeekBar extends SeekBar implements SeekBar.OnSeekBarChangeListener {
+
+    private ValueAnimator mValueAnimator;
+    private RotateDrawable mRotateDrawable;
+    private boolean mVisible;
+    private boolean isRuningAnim;
+
+    public interface ValidateSeekBarCallBack {
+        void onProgressChangedCallBack(SeekBar seekBar, int progress, boolean fromUser);
+
+        void onStartTrackingTouchCallBack(SeekBar seekbar);
+
+        void onStopTrackingTouchCallBack(SeekBar seekbar);
+    }
+
+    private ValidateSeekBarCallBack callback;
+
+    public void setProgressChangedCallback(ValidateSeekBarCallBack callback) {
+        this.callback = callback;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (!isTouchInThumb(event, getThumb().getBounds())) {
+                return false;
+            }
+        }
+        return super.onTouchEvent(event);
+    }
+
+    /**
+     * 判断MotionEvent事件是否位于thumb上
+     *
+     * @param event
+     * @param thumbBounds
+     * @return
+     */
+    private boolean isTouchInThumb(MotionEvent event, Rect thumbBounds) {
+        float x = event.getX();
+        float y = event.getY();
+        //根据偏移量和左边距确定thumb位置
+        int left = thumbBounds.left - getThumbOffset() + getPaddingLeft();
+        int right = left + thumbBounds.width();
+        if (x >= left && x <= right
+                && y >= thumbBounds.top && y <= thumbBounds.bottom)
+            return true;
+        return false;
+    }
+
+
+    public NoClickSeekBar(Context context) {
+        super(context);
+        setOnSeekBarChangeListener(this);
+    }
+
+    public NoClickSeekBar(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        setOnSeekBarChangeListener(this);
+    }
+
+    public NoClickSeekBar(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        setOnSeekBarChangeListener(this);
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        seekBar.setProgress(progress);
+        if (this.callback != null) {
+            this.callback.onProgressChangedCallBack(seekBar, progress, fromUser);
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        if (this.callback != null) {
+            this.callback.onStartTrackingTouchCallBack(seekBar);
+        }
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        if (this.callback != null) {
+            this.callback.onStopTrackingTouchCallBack(seekBar);
+        }
+    }
+
+    public void startAnima() {
+
+        isRuningAnim = true;
+
+        //seekbar滑块动画
+        if (null == mValueAnimator) {
+            mRotateDrawable = (RotateDrawable) getResources().getDrawable(R.drawable.audio_loading_progress);
+            mValueAnimator = ValueAnimator.ofInt(0, 10000);
+            mValueAnimator.setDuration(6000);
+            mValueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    Integer level = (Integer) animation.getAnimatedValue();
+                    level = level + 200;
+                    mRotateDrawable.setLevel(level);
+                }
+            });
+            mValueAnimator.setRepeatMode(ValueAnimator.RESTART);
+            mValueAnimator.setRepeatCount(ValueAnimator.INFINITE);
+            mValueAnimator.setInterpolator(new LinearInterpolator());
+        }
+        if (null != mRotateDrawable)
+            setThumb(mRotateDrawable);
+        if (!mValueAnimator.isRunning())
+            mValueAnimator.start();
+    }
+
+    public void stopAnima() {
+
+        isRuningAnim = false;
+
+        if (null != mValueAnimator && mValueAnimator.isRunning()) {
+            mValueAnimator.pause();
+        }
+        setThumb(getResources().getDrawable(R.drawable.seekbar_thumb_shape));
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (null != mValueAnimator) {
+            mValueAnimator.cancel();
+        }
+        super.onDetachedFromWindow();
+    }
+
+    @SuppressLint("NewApi")
+    @Override
+    public void onScreenStateChanged(int screenState) {
+        super.onScreenStateChanged(screenState);
+        mVisible = screenState == SCREEN_STATE_ON;
+        checkAnima();
+    }
+
+
+    @SuppressLint("NewApi")
+    @Override
+    protected void onVisibilityChanged(View changedView, int visibility) {
+        super.onVisibilityChanged(changedView, visibility);
+        mVisible = visibility == View.VISIBLE;
+        checkAnima();
+    }
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        mVisible = visibility == View.VISIBLE;
+        checkAnima();
+    }
+
+    private void checkAnima() {
+
+        if (isRuningAnim && mVisible) {
+            startAnima();
+        } else {
+            stopAnima();
+        }
+    }
+}
