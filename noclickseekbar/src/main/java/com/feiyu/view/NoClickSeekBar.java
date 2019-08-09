@@ -129,8 +129,8 @@ public class NoClickSeekBar extends SeekBar implements SeekBar.OnSeekBarChangeLi
         }
         if (null != mRotateDrawable)
             setThumb(mRotateDrawable);
-        if (!mValueAnimator.isRunning())
-            mValueAnimator.start();
+
+        mValueAnimator.start();
     }
 
     public void stopAnima() {
