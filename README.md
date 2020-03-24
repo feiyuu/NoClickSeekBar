@@ -1,5 +1,5 @@
 # NoClickSeekBar
-禁止点击进度条快进的seekbar
+禁止点击进度条快进的seekbar，很靓的增大滑块区域实现方式，很靓的防止点击滑块跳转进度方式，还能给滑块加旋转等待动画
 
 简书地址：https://www.jianshu.com/p/15f3e3d2ee95
 
